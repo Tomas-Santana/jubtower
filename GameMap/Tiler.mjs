@@ -9,6 +9,7 @@ export default class Tiler {
         this.tileset = tileset;
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
+        this.entities = [];
 
     }
     async tile() {
@@ -25,8 +26,19 @@ export default class Tiler {
                     width: this.tileWidth,
                     height: this.tileHeight
                 }
-                if (tileType === TextTiles.enemy || tileType === TextTiles.player || tileType === TextTiles.chest) {
+                if (tileType === TextTiles.enemy || tileType === TextTiles.chest || tileType === TextTiles.stairs) {
                     entityImages.push(tileImage);
+                    let sceneImage = {
+                        src: this.tileset[TextTiles.floor].path,
+                        x: x * this.tileWidth,
+                        y: y * this.tileHeight,
+                        width: this.tileWidth,
+                        height: this.tileHeight
+                    }
+                    sceneImages.push(sceneImage);
+                    continue;
+                }
+                if (tileType === TextTiles.player)  {
                     let sceneImage = {
                         src: this.tileset[TextTiles.floor].path,
                         x: x * this.tileWidth,
@@ -41,31 +53,29 @@ export default class Tiler {
                 sceneImages.push(tileImage);
             }
         }
-        console.log(entityImages)
         const images = sceneImages.concat(entityImages);
         await this.drawImages(images);
-        
 
     }
-    async drawImages(images) {
+
+    drawImages(images) {
         return new Promise((resolve, reject) => {
+            if (images.length === 0) {
+                resolve();
+                return;
+            }
+    
             const img = images.shift();
             const imgToDraw = new Image();
             imgToDraw.src = img.src;
-
+    
             imgToDraw.onload = () => {
                 this.ctx.drawImage(imgToDraw, img.x, img.y, img.width, img.height);
-                if (images.length > 0) {
-                    this.drawImages(images)
-                } else {
-                    resolve();
-                }
-            }
-            imgToDraw.onerror = (err) => {
-                reject(err);
-            }
-        })
-
-
+                console.log('drawing images');
+                this.drawImages(images).then(resolve);
+            };
+    
+            imgToDraw.onerror = reject;
+        });
     }
 }

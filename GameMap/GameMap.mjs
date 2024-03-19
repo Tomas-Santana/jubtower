@@ -8,6 +8,7 @@ export default class GameMap {
         this.width = width;
         this.height = height;
         this.tiles = this._generateMap();
+        this.entities = [];
     }
 
     _generateMap() {
@@ -37,8 +38,9 @@ export default class GameMap {
         
         const rooms = [];
         let numRooms = 0;
-        const spawnPoint = { x: 0, y: 0 };
+        this.spawnpoint = { x: 0, y: 0 };
         const chestLocation = { x: 0, y: 0 };
+        const stairsLocation = { x: 0, y: 0 };
 
         
         const maxEnemiesPerRoom = Math.floor(difficulty * (maxRooms/5))
@@ -68,11 +70,13 @@ export default class GameMap {
 
                 chestLocation.x = newX;
                 chestLocation.y = newY;
+                
 
                 if (numRooms === 0) {
                     // This is the first room, where the player starts
-                    spawnPoint.x = newX;
-                    spawnPoint.y = newY;
+                    this.spawnpoint.x = newX;
+                    this.spawnpoint.y = newY;
+                    this.entities.push({type: 'player', x: newX, y: newY});
                     
                 } else {
                     // All rooms after the first
@@ -89,12 +93,19 @@ export default class GameMap {
                         this.createVTunnel(prevY, newY, prevX, tunnelWidth);
                         this.createHTunnel(prevX, newX, newY, tunnelWidth);
                     }
+                    // Place stairs in the third room
+                    if (numRooms === 2) {
+                        stairsLocation.x = newX;
+                        stairsLocation.y = newY;
+                    }
+
                     // Place enemies randomly in the room
                     const enemiesInRoom = randint(0, maxEnemiesPerRoom);
                     for (let i = 0; i < enemiesInRoom; i++) {
                         const enemyX = randint(newRoom.x1 + 1, newRoom.x2 - 1);
                         const enemyY = randint(newRoom.y1 + 1, newRoom.y2 - 1);
                         enemyLocations.push({ x: enemyX, y: enemyY });
+                        this.entities.push({type: 'enemy', x: enemyX, y: enemyY});
                     }
                     
                 }
@@ -104,11 +115,15 @@ export default class GameMap {
             }
 
         }
-        this.tiles[spawnPoint.y][spawnPoint.x] = new Tile(TextTiles.player, false);
+        this.tiles[this.spawnpoint.y][this.spawnpoint.x] = new Tile(TextTiles.player, false);
         for (let enemy of enemyLocations) {
             this.tiles[enemy.y][enemy.x] = new Tile(TextTiles.enemy, true);
         }
         this.tiles[chestLocation.y][chestLocation.x] = new Tile(TextTiles.chest, false);
+        this.tiles[stairsLocation.y][stairsLocation.x] = new Tile(TextTiles.stairs, false);
+
+        this.entities.push({type: 'chest', x: chestLocation.x, y: chestLocation.y});
+        this.entities.push({type: 'stairs', x: stairsLocation.x, y: stairsLocation.y});
 
     }
 
@@ -118,25 +133,56 @@ export default class GameMap {
                 this.tiles[y][x] = new Tile(TextTiles.floor, false);
             }
         }
+        // Add 'L' to left wall
+        // for (let y = room.y1; y < room.y2; y++) {
+        //     this.tiles[y][room.x1] = new Tile(TextTiles.leftWall, true);
+        // }
+        // // Add 'R' to right wall
+        // for (let y = room.y1; y < room.y2; y++) {
+        //     this.tiles[y][room.x2] = new Tile(TextTiles.rightWall, true);
+        // }
+        // // Add 'T' to top wall
+        // for (let x = room.x1; x < room.x2; x++) {
+        //     this.tiles[room.y1][x] = new Tile(TextTiles.topWall, true);
+        // }
+        // // Add 'B' to bottom wall
+        // for (let x = room.x1; x < room.x2; x++) {
+        //     this.tiles[room.y2][x] = new Tile(TextTiles.bottomWall, true);
+        // }
+        // // add corners
+        // this.tiles[room.y1][room.x1] = new Tile(TextTiles.topLeftCorner, true);
+        // this.tiles[room.y1][room.x2] = new Tile(TextTiles.topRightCorner, true);
+        // this.tiles[room.y2-1][room.x1] = new Tile(TextTiles.bottomLeftCorner, true);
+        // this.tiles[room.y2-1][room.x2] = new Tile(TextTiles.bottomRightCorner, true);
     }
 
-    createHTunnel(x1, x2, y, width = 1) {
+    createHTunnel(x1, x2, y) {
         for (let x = Math.min(x1, x2); x < Math.max(x1, x2) + 1; x++) {
-            for (let w = Math.floor(width / 2) * -1; w < Math.ceil(width / 2); w++) {
-                this.tiles[y + w][x].blocked = false;
-                this.tiles[y + w][x].blockSight = false;
-                this.tiles[y + w][x].type = TextTiles.floor;
-            }
+            this.tiles[y][x].blocked = false;
+            this.tiles[y][x].blockSight = false;
+            this.tiles[y][x].type = TextTiles.floor;
+            this.tiles[y + 1][x].blocked = false;
+            this.tiles[y + 1][x].blockSight = false;
+            this.tiles[y + 1][x].type = TextTiles.floor;
+            this.tiles[y - 1][x].blocked = false;
+            this.tiles[y - 1][x].blockSight = false;
+            this.tiles[y - 1][x].type = TextTiles.floor;
+
         }
+        
     }
 
-    createVTunnel(y1, y2, x, width=1) {
+    createVTunnel(y1, y2, x) {
         for (let y = Math.min(y1, y2); y < Math.max(y1, y2) + 1; y++) {
-            for (let w = Math.floor(width / 2) * -1; w < Math.ceil(width / 2); w++) {
-                this.tiles[y][x + w].blocked = false;
-                this.tiles[y][x + w].blockSight = false;
-                this.tiles[y][x + w].type = TextTiles.floor;
-            }
+            this.tiles[y][x].blocked = false;
+            this.tiles[y][x].blockSight = false;
+            this.tiles[y][x].type = TextTiles.floor;
+            this.tiles[y][x + 1].blocked = false;
+            this.tiles[y][x + 1].blockSight = false;
+            this.tiles[y][x + 1].type = TextTiles.floor;
+            this.tiles[y][x - 1].blocked = false;
+            this.tiles[y][x - 1].blockSight = false;
+            this.tiles[y][x - 1].type = TextTiles.floor;
         }
     }
 
