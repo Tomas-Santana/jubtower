@@ -49,6 +49,9 @@ export default class Tiler {
                     sceneImages.push(sceneImage);
                     continue;
                 }
+                if (tileType === TextTiles.wall) {
+                    continue;
+                }
 
                 sceneImages.push(tileImage);
             }
@@ -57,7 +60,9 @@ export default class Tiler {
         await this.drawImages(images);
 
     }
-
+    async tileWithFog(player) {
+        
+    }
     drawImages(images) {
         return new Promise((resolve, reject) => {
             if (images.length === 0) {

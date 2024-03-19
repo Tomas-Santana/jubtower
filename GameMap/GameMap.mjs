@@ -43,8 +43,8 @@ export default class GameMap {
         const stairsLocation = { x: 0, y: 0 };
 
         
-        const maxEnemiesPerRoom = Math.floor(difficulty * (maxRooms/5))
-        const enemyLocations = [];
+        const maxSpikesPerRoom = Math.floor(difficulty * (maxRooms/2))
+        const spikesLocations = [];
 
         for (let i = 0; i < maxRooms; i++) {
             const w = randint(roomMinSize, roomMaxSize);
@@ -100,12 +100,12 @@ export default class GameMap {
                     }
 
                     // Place enemies randomly in the room
-                    const enemiesInRoom = randint(0, maxEnemiesPerRoom);
-                    for (let i = 0; i < enemiesInRoom; i++) {
+                    const spikesInRoom = randint(0, maxSpikesPerRoom);
+                    for (let i = 0; i < spikesInRoom; i++) {
                         const enemyX = randint(newRoom.x1 + 1, newRoom.x2 - 1);
                         const enemyY = randint(newRoom.y1 + 1, newRoom.y2 - 1);
-                        enemyLocations.push({ x: enemyX, y: enemyY });
-                        this.entities.push({type: 'enemy', x: enemyX, y: enemyY});
+                        spikesLocations.push({ x: enemyX, y: enemyY });
+                        this.entities.push({type: 'spikes', x: enemyX, y: enemyY});
                     }
                     
                 }
@@ -116,8 +116,8 @@ export default class GameMap {
 
         }
         this.tiles[this.spawnpoint.y][this.spawnpoint.x] = new Tile(TextTiles.player, false);
-        for (let enemy of enemyLocations) {
-            this.tiles[enemy.y][enemy.x] = new Tile(TextTiles.enemy, true);
+        for (let enemy of spikesLocations) {
+            this.tiles[enemy.y][enemy.x] = new Tile(TextTiles.spikes, false);
         }
         this.tiles[chestLocation.y][chestLocation.x] = new Tile(TextTiles.chest, false);
         this.tiles[stairsLocation.y][stairsLocation.x] = new Tile(TextTiles.stairs, false);

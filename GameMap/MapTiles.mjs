@@ -40,5 +40,8 @@ export default {
     },
     's': {
         path: 'TileSet/frames/floor_stairs.png'
+    },
+    '^': {
+        path: 'TileSet/frames/floor_spikes_anim_f3.png'
     }
 }

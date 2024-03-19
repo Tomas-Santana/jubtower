@@ -1,4 +1,6 @@
+
 export default class Entity {
+    static gameMap = null;
     constructor(ctx, x, y, width, height, type, path, tileWidth, tileHeight) {
         this.ctx = ctx;
         this.x = x;
@@ -41,21 +43,28 @@ export default class Entity {
         })
     }
     async move(direction) {
-        await this.undraw();
         switch (direction) {
             case 'up':
+                if (Entity.gameMap.tiles[this.y - 1][this.x].blocked) return;
+                await this.undraw();
                 this.absY -= this.tileHeight;
                 this.y -= 1;
                 break;
             case 'down':
+                if (Entity.gameMap.tiles[this.y + 1][this.x].blocked) return;
+                await this.undraw();
                 this.absY += this.tileHeight;
                 this.y += 1;
                 break;
             case 'left':
+                if (Entity.gameMap.tiles[this.y][this.x - 1].blocked) return;
+                await this.undraw();
                 this.absX -= this.tileWidth;
                 this.x -= 1;
                 break;
             case 'right':
+                if (Entity.gameMap.tiles[this.y][this.x + 1].blocked) return;
+                await this.undraw();
                 this.absX += this.tileWidth;
                 this.x += 1;
                 break;

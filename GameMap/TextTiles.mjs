@@ -12,5 +12,6 @@ export default {
     player: '@',
     enemy: 'e',
     chest: 'c',
-    stairs: 's'  
+    stairs: 's' ,
+    spikes: '^' 
 }
