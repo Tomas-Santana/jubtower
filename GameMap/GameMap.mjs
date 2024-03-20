@@ -35,7 +35,10 @@ export default class GameMap {
     }
 
     makeMap(maxRooms = 20, roomMinSize = 6, roomMaxSize = 10, mapWidth = 80, mapHeight = 50, difficulty = 1) {
-        
+        // reset map
+        this.tiles = this._generateMap();
+        return new Promise((resolve, reject) => {
+
         const rooms = [];
         let numRooms = 0;
         this.spawnpoint = { x: 0, y: 0 };
@@ -112,7 +115,7 @@ export default class GameMap {
 
                 rooms.push(newRoom);
                 numRooms++;
-            }
+        }
 
         }
         this.tiles[this.spawnpoint.y][this.spawnpoint.x] = new Tile(TextTiles.player, false);
@@ -124,6 +127,8 @@ export default class GameMap {
 
         this.entities.push({type: 'chest', x: chestLocation.x, y: chestLocation.y});
         this.entities.push({type: 'stairs', x: stairsLocation.x, y: stairsLocation.y});
+        resolve();
+        });
 
     }
 

@@ -1,7 +1,7 @@
-
+import TextTiles from "./TextTiles.mjs";
 export default class Entity {
     static gameMap = null;
-    constructor(ctx, x, y, width, height, type, path, tileWidth, tileHeight) {
+    constructor(ctx, x, y, width, height, type, path, tileWidth, tileHeight, reset, gameOver) {
         this.ctx = ctx;
         this.x = x;
         this.y = y;
@@ -13,6 +13,8 @@ export default class Entity {
         this.path = path;
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
+        this.reset = reset;
+        this.gameOver = gameOver;
     }
     async draw() {
         console.log('drawing entity at ', this.x, this.y, this.absX, this.absY)
@@ -23,24 +25,30 @@ export default class Entity {
             width: this.width,
             height: this.height
         }
-        await this.drawImage(img);
+        await this.drawImages([img]);
     }
     async undraw() {
         this.ctx.clearRect(this.absX, this.absY, this.width, this.height);
     }
-    async drawImage(image) {
+    drawImages(images) {
         return new Promise((resolve, reject) => {
+            if (images.length === 0) {
+                resolve();
+                return;
+            }
+    
+            const img = images.shift();
             const imgToDraw = new Image();
-            imgToDraw.src = image.src;
-
+            imgToDraw.src = img.src;
+    
             imgToDraw.onload = () => {
-                this.ctx.drawImage(imgToDraw, image.x, image.y, image.width, image.height);
-                resolve
-            }
-            imgToDraw.onerror = (err) => {
-                reject(err);
-            }
-        })
+                this.ctx.drawImage(imgToDraw, img.x, img.y, img.width, img.height);
+                console.log('drawing images');
+                this.drawImages(images).then(resolve);
+            };
+    
+            imgToDraw.onerror = reject;
+        });
     }
     async move(direction) {
         switch (direction) {
@@ -68,6 +76,14 @@ export default class Entity {
                 this.absX += this.tileWidth;
                 this.x += 1;
                 break;
+            }
+        console.log(Entity.gameMap.tiles[this.y][this.x].type)
+        const tile = Entity.gameMap.tiles[this.y][this.x];
+        if (tile.type === TextTiles.stairs) {
+            this.reset()
+        }
+        if (tile.type === TextTiles.spikes) {
+            this.gameOver()
         }
         await this.draw();
     }

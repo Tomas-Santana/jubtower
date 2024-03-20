@@ -60,8 +60,60 @@ export default class Tiler {
         await this.drawImages(images);
 
     }
-    async tileWithFog(player) {
-        
+    clear() {
+        this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+    }
+    async tileWithFog(player, radius = 10) {
+        const sceneImages = [];
+        const entityImages = [];
+        const playerPosition = {
+            x: player.x,
+            y: player.y
+        }
+
+        for (let y = Math.max(0, playerPosition.y - radius); y <= Math.min(this.map.tiles.length - 1, playerPosition.y + radius); y++){
+            for (let x = Math.max(0, playerPosition.x - radius); x <= Math.min(this.map.tiles[y].length - 1, playerPosition.x + radius); x++) {
+                const tile = this.map.tiles[y][x];
+                const tileType = tile.type;
+                let tileImage = {
+                    src: this.tileset[tileType].path,
+                    x: x * this.tileWidth,
+                    y: y * this.tileHeight,
+                    width: this.tileWidth,
+                    height: this.tileHeight
+                }
+                if (tileType === TextTiles.enemy || tileType === TextTiles.chest || tileType === TextTiles.stairs) {
+                    entityImages.push(tileImage);
+                    let sceneImage = {
+                        src: this.tileset[TextTiles.floor].path,
+                        x: x * this.tileWidth,
+                        y: y * this.tileHeight,
+                        width: this.tileWidth,
+                        height: this.tileHeight
+                    }
+                    sceneImages.push(sceneImage);
+                    continue;
+                }
+                if (tileType === TextTiles.player)  {
+                    let sceneImage = {
+                        src: this.tileset[TextTiles.floor].path,
+                        x: x * this.tileWidth,
+                        y: y * this.tileHeight,
+                        width: this.tileWidth,
+                        height: this.tileHeight
+                    }
+                    sceneImages.push(sceneImage);
+                    continue;
+                }
+                if (tileType === TextTiles.wall) {
+                    continue;
+                }
+
+                sceneImages.push(tileImage);
+            }
+        }
+        const images = sceneImages.concat(entityImages);
+        await this.drawImages(images);
     }
     drawImages(images) {
         return new Promise((resolve, reject) => {
@@ -76,7 +128,6 @@ export default class Tiler {
     
             imgToDraw.onload = () => {
                 this.ctx.drawImage(imgToDraw, img.x, img.y, img.width, img.height);
-                console.log('drawing images');
                 this.drawImages(images).then(resolve);
             };
     
