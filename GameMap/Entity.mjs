@@ -1,4 +1,6 @@
 import TextTiles from "./TextTiles.mjs";
+import time from "./Timer.js"
+
 export default class Entity {
     static gameMap = null;
     constructor(ctx, x, y, width, height, type, path, tileWidth, tileHeight, reset, gameOver) {
@@ -15,9 +17,10 @@ export default class Entity {
         this.tileHeight = tileHeight;
         this.reset = reset;
         this.gameOver = gameOver;
+        this.lastDir = 'up';
     }
-    async draw() {
-        console.log('drawing entity at ', this.x, this.y, this.absX, this.absY)
+    draw() {
+        // console.log('drawing entity at ', this.x, this.y, this.absX, this.absY)
         const img = {
             src: this.path,
             x: this.absX,
@@ -25,59 +28,74 @@ export default class Entity {
             width: this.width,
             height: this.height
         }
-        await this.drawImages([img]);
+        this.drawImages([img]);
     }
-    async undraw() {
+    undraw() {
         this.ctx.clearRect(this.absX, this.absY, this.width, this.height);
     }
     drawImages(images) {
-        return new Promise((resolve, reject) => {
-            if (images.length === 0) {
-                resolve();
-                return;
-            }
-    
-            const img = images.shift();
-            const imgToDraw = new Image();
-            imgToDraw.src = img.src;
-    
-            imgToDraw.onload = () => {
-                this.ctx.drawImage(imgToDraw, img.x, img.y, img.width, img.height);
-                console.log('drawing images');
-                this.drawImages(images).then(resolve);
-            };
-    
-            imgToDraw.onerror = reject;
-        });
+        if (images.length === 0) {
+            return;
+        }
+
+        const img = images.shift();
+        const imgToDraw = new Image();
+        imgToDraw.src = img.src;
+
+        imgToDraw.onload = () => {
+            this.ctx.drawImage(imgToDraw, img.x, img.y, img.width, img.height);
+            this.drawImages(images);
+        };
     }
-    async move(direction) {
-        switch (direction) {
-            case 'up':
-                if (Entity.gameMap.tiles[this.y - 1][this.x].blocked) return;
-                await this.undraw();
-                this.absY -= this.tileHeight;
-                this.y -= 1;
-                break;
-            case 'down':
-                if (Entity.gameMap.tiles[this.y + 1][this.x].blocked) return;
-                await this.undraw();
-                this.absY += this.tileHeight;
-                this.y += 1;
-                break;
-            case 'left':
-                if (Entity.gameMap.tiles[this.y][this.x - 1].blocked) return;
-                await this.undraw();
-                this.absX -= this.tileWidth;
-                this.x -= 1;
-                break;
-            case 'right':
-                if (Entity.gameMap.tiles[this.y][this.x + 1].blocked) return;
-                await this.undraw();
-                this.absX += this.tileWidth;
-                this.x += 1;
-                break;
+    smoothMove(dirX, dirY) {
+        return new Promise((rs, rj) => {
+            const velocity = 3 * time.deltaTime;
+            const move = () => {
+
+                
+                time.wnd.requestAnimationFrame(move);
             }
-        console.log(Entity.gameMap.tiles[this.y][this.x].type)
+        })
+    }
+    async move(dir) {
+        const values = {
+            'up': {x:-1, y:0},
+            'down': {x:1, y:0},
+            'left': {x:0, y:-1},
+            'right': {x:0, y:1},
+        }
+        const dy = values[dir].y;
+        const dx = values[dir].x;
+        
+        if (Entity.gameMap.tile[this.y + dy][this.x + dx].blocked) return;
+        await this.smoothMove(dx, dy);
+
+        // switch (dir) {
+        //     case 'up':
+        //         if (Entity.gameMap.tiles[this.y - 1][this.x].blocked) return;
+        //         this.undraw();
+        //         this.absY -= this.tileHeight;
+        //         this.y -= 1;
+        //         break;
+        //     case 'down':
+        //         if (Entity.gameMap.tiles[this.y + 1][this.x].blocked) return;
+        //         this.undraw();
+        //         this.absY += this.tileHeight;
+        //         this.y += 1;
+        //         break;
+        //     case 'left':
+        //         if (Entity.gameMap.tiles[this.y][this.x - 1].blocked) return;
+        //         this.undraw();
+        //         this.absX -= this.tileWidth;
+        //         this.x -= 1;
+        //         break;
+        //     case 'right':
+        //         if (Entity.gameMap.tiles[this.y][this.x + 1].blocked) return;
+        //         this.undraw();
+        //         this.absX += this.tileWidth;
+        //         this.x += 1;
+        //         break;
+        //     }
         const tile = Entity.gameMap.tiles[this.y][this.x];
         if (tile.type === TextTiles.stairs) {
             this.reset()
@@ -85,7 +103,8 @@ export default class Entity {
         if (tile.type === TextTiles.spikes) {
             this.gameOver()
         }
-        await this.draw();
+        this.draw();
+        this.lastDir = dir;
     }
     get absPosition() {
         return {
