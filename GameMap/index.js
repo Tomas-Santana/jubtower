@@ -3,14 +3,14 @@ import MapTiles from './MapTiles.mjs';
 import Tiler from "./Tiler.mjs";
 import Entity from "./Entity.mjs";
 import TextTiles from "./TextTiles.mjs";
+import time from './Timer.js'
+time.loop(window)
 
 const width = 50;
 const height = 30;
 const roomMaxSize = 12;
 const roomMinSize = 4;
 const tileSize = 16;
-
-
 
 const background = document.createElement('canvas');
 background.style.position = 'absolute';
@@ -87,7 +87,11 @@ function drawMask() {
     maskCtx.fillStyle = 'rgba(0, 0, 0)';
     maskCtx.fillRect(0, 0, width * tileSize, height * tileSize);
     maskCtx.beginPath();
-    maskCtx.arc(player.absX + tileSize / 2, player.absY + tileSize / 2, tileSize * 3, 0, Math.PI * 2);
+    maskCtx.arc(
+        player.absX + tileSize / 2,
+        player.absY + tileSize / 2, 
+        tileSize * 12, 0, Math.PI * 2
+    );
     maskCtx.clip();
     maskCtx.clearRect(0, 0, width * tileSize, height * tileSize);
     maskCtx.restore();
@@ -123,32 +127,31 @@ async function newLevel() {
     player.draw();
 
     overlayCtx.clearRect(0, 0, width * tileSize, height * tileSize);
-    time = 31;
+    remainingTime = 31;
     score += 100;
 
 }
 
-document.addEventListener('keydown', async (e) => {
+document.addEventListener('keydown', (e) => {
     if (e.repeat) return;
     switch (e.key) {
         case 'ArrowUp':
-            await player.move('up');
+            player.move('up');
             drawMask();
             break;
         case 'ArrowDown':
-            await player.move('down');
+            player.move('down');
             break;
         case 'ArrowLeft':
-            await player.move('left');
+            player.move('left');
             break;
         case 'ArrowRight':
-            await player.move('right');
+            player.move('right');
             break;
         default:
             break;
     }
     drawMask();
-    console.log('player at', player.x, player.y, 'retiling')
 })
 
 // add a timer to the ui canvas
@@ -161,18 +164,18 @@ document.body.appendChild(ui);
 
 const uiCtx = ui.getContext('2d');
 
-var time = 31;
+var remainingTime = 31;
 var score = 0;
 
-const timer = setInterval(() => {
-    time -= 1;
+const countDown = setInterval(() => {
+    remainingTime -= 1;
     uiCtx.clearRect(0, 0, width * tileSize, height * tileSize);
     uiCtx.fillStyle = 'white';
     uiCtx.font = '20px Arial';
-    uiCtx.fillText(`Time: ${time}`, 700, 50);
+    uiCtx.fillText(`Time: ${remainingTime}`, 700, 50);
     uiCtx.fillText(`score: ${score}`, 700, 70);
-    if (time === 0) {
-        clearInterval(timer);
+    if (remainingTime === 0) {
+        clearInterval(countDown);
         uiCtx.clearRect(0, 0, width * tileSize, height * tileSize);
         overlayCtx.fillStyle = 'rgba(0, 0, 0)';
         overlayCtx.fillRect(0, 0, width * tileSize, height * tileSize);
