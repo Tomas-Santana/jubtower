@@ -4,6 +4,7 @@ import Tiler from "./Tiler.mjs";
 import Entity from "./Entity.mjs";
 import TextTiles from "./TextTiles.mjs";
 import time from './Timer.js'
+import Player from "./player.js";
 time.loop(window)
 
 const width = 50;
@@ -45,7 +46,58 @@ const overlayCtx = overlay.getContext('2d');
 export const gameMap = new GameMap(width, height);
 gameMap.makeMap(25, roomMinSize, roomMaxSize, width, height, .5);
 const tiler = new Tiler(backgroundCtx, gameMap, MapTiles, tileSize, tileSize);
-const player = new Entity(foregroundCtx, gameMap.spawnpoint.x, gameMap.spawnpoint.y, tileSize, tileSize, 'player', MapTiles[TextTiles.player].path, tileSize, tileSize, newLevel, gameOver)
+const player = new Entity(foregroundCtx, gameMap.spawnpoint.x, gameMap.spawnpoint.y, tileSize, tileSize, 'player', MapTiles[TextTiles.player].path, tileSize, tileSize, newLevel, gameOver, gameMap)
+const pl = new Player({
+    position: {
+      x: 100,
+      y: 300,
+    },
+    imageSrc: "./img/warrior/Idle.png",
+    frameRate: 8,
+    animations: {
+      Idle: {
+        imageSrc: "./img/warrior/Idle.png",
+        frameRate: 8,
+        frameBuffer: 5,
+      },
+      Run: {
+        imageSrc: "./img/warrior/Run.png",
+        frameRate: 8,
+        frameBuffer: 5,
+      },
+      Jump: {
+        imageSrc: "./img/warrior/Jump.png",
+        frameRate: 2,
+        frameBuffer: 5,
+      },
+      Fall: {
+        imageSrc: "./img/warrior/Fall.png",
+        frameRate: 2,
+        frameBuffer: 5,
+      },
+      FallLeft: {
+        imageSrc: "./img/warrior/FallLeft.png",
+        frameRate: 2,
+        frameBuffer: 5,
+      },
+      RunLeft: {
+        imageSrc: "./img/warrior/RunLeft.png",
+        frameRate: 8,
+        frameBuffer: 5,
+      },
+      IdleLeft: {
+        imageSrc: "./img/warrior/IdleLeft.png",
+        frameRate: 8,
+        frameBuffer: 5,
+      },
+      JumpLeft: {
+        imageSrc: "./img/warrior/JumpLeft.png",
+        frameRate: 2,
+        frameBuffer: 5,
+      },
+    },
+    ctx: foregroundCtx
+  });
 
 
 const drawLevel = async () => {
@@ -115,8 +167,9 @@ async function newLevel() {
     await gameMap.makeMap(25, roomMinSize, roomMaxSize, width, height, .5);
 
     tiler.map = gameMap;
+    player.gameMap = gameMap;
     tiler.entities = [];
-    tiler.entities.push(player);
+    tiler.entities.push(pl);
     backgroundCtx.fillStyle = 'black';
     backgroundCtx.fillRect(0, 0, width * tileSize, height * tileSize);
     player.x = gameMap.spawnpoint.x;
@@ -133,7 +186,7 @@ async function newLevel() {
 }
 
 document.addEventListener('keydown', (e) => {
-    if (e.repeat) return;
+    // if (e.repeat) return;
     switch (e.key) {
         case 'ArrowUp':
             player.move('up');
@@ -164,10 +217,12 @@ document.body.appendChild(ui);
 
 const uiCtx = ui.getContext('2d');
 
-var remainingTime = 31;
+var remainingTime = 5;
 var score = 0;
 
-const countDown = setInterval(() => {
+
+const newGame = () => {
+  const countDown = setInterval(() => {
     remainingTime -= 1;
     uiCtx.clearRect(0, 0, width * tileSize, height * tileSize);
     uiCtx.fillStyle = 'white';
@@ -182,10 +237,65 @@ const countDown = setInterval(() => {
         overlayCtx.fillStyle = 'white';
         overlayCtx.font = '30px Arial';
         overlayCtx.fillText('Game Over', 100, 100);
+
+        overlay.onclick = async () => {
+          overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+          overlay.onclick = null;
+          await newLevel();
+          remainingTime = 5;
+          score = 0;
+          newGame();
+        }
     }
-}, 1000);
+  }, 1000);
+}
+newGame();
 
 
 
 
-
+  
+  const keys = {
+    a: {
+      pressed: false,
+    },
+    d: {
+      pressed: false,
+    },
+    w: {
+      pressed: false,
+    },
+    s: {
+      pressed: false,
+    },
+  };
+  
+  const animate = () => {
+    window.requestAnimationFrame(animate);
+  
+    canctx.fillStyle = "lightblue";
+    canctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+    player.update();
+    pl2.update();
+    spike.update();
+  
+    player.velocity.x = 0;
+    player.velocity.y = 0;
+  
+    if (keys.d.pressed) {
+      player.switchSprite("Run");
+      player.velocity.x = 2;
+      player.lastDirection = "right";
+    } else if (keys.a.pressed) {
+      player.switchSprite("RunLeft");
+      player.velocity.x = -2;
+      player.lastDirection = "left";
+    } else if (keys.w.pressed) {
+      player.switchSprite("Run");
+      player.velocity.y = -2;
+    } else if (keys.s.pressed) {
+      player.switchSprite("Run");
+      player.velocity.y = 2;
+    }
+}
