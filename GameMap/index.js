@@ -1,16 +1,21 @@
 import GameMap from "./GameMap.mjs";
 import MapTiles from './MapTiles.mjs';
 import Tiler from "./Tiler.mjs";
-import Entity from "./Entity.mjs";
+import Entity from "./Entity.js";
 import TextTiles from "./TextTiles.mjs";
+import time from './Timer.js'
+import Player from "./player.js";
+time.loop(window)
 
 const width = 50;
 const height = 30;
 const roomMaxSize = 12;
 const roomMinSize = 4;
 const tileSize = 16;
+const levelTime = 30;
+let playing = false;
 
-
+window.globalDifficulty = 0;
 
 const background = document.createElement('canvas');
 background.style.position = 'absolute';
@@ -23,6 +28,14 @@ const backgroundCtx = background.getContext('2d');
 // draw black rectancle as background
 backgroundCtx.fillStyle = 'black';
 backgroundCtx.fillRect(0, 0, width * tileSize, height * tileSize);
+
+const playingMusic = new Audio('../TileSet/audio/dungeon.mp3');
+playingMusic.loop = true;
+playingMusic.volume = 0.4;
+
+const deadMusic = new Audio('../Tileset/audio/death.mp3');
+deadMusic.loop = true;
+deadMusic.volume = 0.4;
 
 const foreground = document.createElement('canvas');
 foreground.style.position = 'absolute';
@@ -45,8 +58,25 @@ const overlayCtx = overlay.getContext('2d');
 export const gameMap = new GameMap(width, height);
 gameMap.makeMap(25, roomMinSize, roomMaxSize, width, height, .5);
 const tiler = new Tiler(backgroundCtx, gameMap, MapTiles, tileSize, tileSize);
-const player = new Entity(foregroundCtx, gameMap.spawnpoint.x, gameMap.spawnpoint.y, tileSize, tileSize, 'player', MapTiles[TextTiles.player].path, tileSize, tileSize, newLevel, gameOver)
 
+const deleteChest = (x, y, w, h) => {
+  const floor = new Image()
+  floor.src = '../TileSet/frames/floor_1.png';
+  floor.onload = () => {
+    backgroundCtx.drawImage(floor, x, y, w, h)
+  }
+}
+
+const drawUI = () => {
+  uiCtx.clearRect(0, 0, width * tileSize, height * tileSize);
+  uiCtx.fillStyle = 'white';
+  uiCtx.font = '20px Arial';
+  uiCtx.fillText(`Time: ${remainingTime}`, 700, 50);
+  uiCtx.fillText(`Score: ${score}`, 700, 70);
+  uiCtx.fillText(`HP: ${player.hp}`, 700, 90);
+}
+
+const player = new Entity(foregroundCtx, gameMap.spawnpoint.x, gameMap.spawnpoint.y, tileSize, tileSize, 'player', MapTiles[TextTiles.player].path, tileSize, tileSize, newLevel, gameOver, gameMap, drawUI, deleteChest)
 
 const drawLevel = async () => {
     // add an overlay
@@ -55,7 +85,7 @@ const drawLevel = async () => {
     // add text to the overlay
     overlayCtx.fillStyle = 'white';
     overlayCtx.font = '30px Arial';
-    overlayCtx.fillText('Generating Level...', 100, 100);
+    overlayCtx.fillText('Generating Level...', 300, 210);
     Entity.gameMap = gameMap;
     tiler.entities.push(player);
     await tiler.tile();
@@ -63,14 +93,28 @@ const drawLevel = async () => {
     overlayCtx.clearRect(0, 0, width * tileSize, height * tileSize);
     drawMask();
 }
-drawLevel();
 
 async function gameOver() {
-    overlayCtx.fillStyle = 'rgba(0, 0, 0)';
-    overlayCtx.fillRect(0, 0, width * tileSize, height * tileSize);
-    overlayCtx.fillStyle = 'white';
-    overlayCtx.font = '30px Arial';
-    overlayCtx.fillText('Game Over', 100, 100);
+  playingMusic.pause();
+  deadMusic.play();
+  uiCtx.clearRect(0, 0, width * tileSize, height * tileSize);
+  overlayCtx.fillStyle = 'rgba(0, 0, 0)';
+  overlayCtx.fillRect(0, 0, width * tileSize, height * tileSize);
+  overlayCtx.fillStyle = 'white';
+  overlayCtx.font = '30px Arial';
+  overlayCtx.fillText('Game Over', 325, 100);
+  overlayCtx.fillText('Click to restart', 310, 140);
+
+  overlay.onclick = async () => {
+    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+    overlay.onclick = null;
+    await newLevel();
+    remainingTime = levelTime+1;
+    score = 0;
+    deadMusic.pause()
+    deadMusic.currentTime = 0;
+    newGame();
+  }
 }
 
 var mask = document.createElement('canvas');
@@ -87,7 +131,11 @@ function drawMask() {
     maskCtx.fillStyle = 'rgba(0, 0, 0)';
     maskCtx.fillRect(0, 0, width * tileSize, height * tileSize);
     maskCtx.beginPath();
-    maskCtx.arc(player.absX + tileSize / 2, player.absY + tileSize / 2, tileSize * 3, 0, Math.PI * 2);
+    maskCtx.arc(
+        player.absX + tileSize / 2,
+        player.absY + tileSize / 2, 
+        tileSize * 50, 0, Math.PI * 2
+    );
     maskCtx.clip();
     maskCtx.clearRect(0, 0, width * tileSize, height * tileSize);
     maskCtx.restore();
@@ -105,12 +153,12 @@ async function newLevel() {
     overlayCtx.font = '30px Arial';
     overlayCtx.fillText('Generating Level...', 100, 100);
 
-    foregroundCtx.clearRect(0, 0, width * tileSize, height * tileSize);
-    backgroundCtx.clearRect(0, 0, width * tileSize, height * tileSize);
     
-    await gameMap.makeMap(25, roomMinSize, roomMaxSize, width, height, .5);
-
+    await gameMap.makeMap(25, roomMinSize, roomMaxSize, width, height, .5 + window.globalDifficulty);
+    
+    backgroundCtx.clearRect(0, 0, width * tileSize, height * tileSize);
     tiler.map = gameMap;
+    player.gameMap = gameMap;
     tiler.entities = [];
     tiler.entities.push(player);
     backgroundCtx.fillStyle = 'black';
@@ -119,36 +167,38 @@ async function newLevel() {
     player.absX = gameMap.spawnpoint.x * tileSize;
     player.y = gameMap.spawnpoint.y;
     player.absY = gameMap.spawnpoint.y * tileSize;
+    foregroundCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    overlayCtx.clearRect(0, 0, width * tileSize, height * tileSize);
+    drawMask();
     await tiler.tile();
     player.draw();
 
     overlayCtx.clearRect(0, 0, width * tileSize, height * tileSize);
-    time = 31;
+    remainingTime = levelTime;
     score += 100;
 
 }
 
-document.addEventListener('keydown', async (e) => {
-    if (e.repeat) return;
+document.addEventListener('keydown', (e) => {
+    if (!playing) return;
     switch (e.key) {
         case 'ArrowUp':
-            await player.move('up');
+            player.move('up');
             drawMask();
             break;
         case 'ArrowDown':
-            await player.move('down');
+            player.move('down');
             break;
         case 'ArrowLeft':
-            await player.move('left');
+            player.move('left');
             break;
         case 'ArrowRight':
-            await player.move('right');
+            player.move('right');
             break;
         default:
             break;
     }
     drawMask();
-    console.log('player at', player.x, player.y, 'retiling')
 })
 
 // add a timer to the ui canvas
@@ -161,28 +211,36 @@ document.body.appendChild(ui);
 
 const uiCtx = ui.getContext('2d');
 
-var time = 31;
+var remainingTime = 30+1;
 var score = 0;
 
-const timer = setInterval(() => {
-    time -= 1;
-    uiCtx.clearRect(0, 0, width * tileSize, height * tileSize);
-    uiCtx.fillStyle = 'white';
-    uiCtx.font = '20px Arial';
-    uiCtx.fillText(`Time: ${time}`, 700, 50);
-    uiCtx.fillText(`score: ${score}`, 700, 70);
-    if (time === 0) {
-        clearInterval(timer);
-        uiCtx.clearRect(0, 0, width * tileSize, height * tileSize);
-        overlayCtx.fillStyle = 'rgba(0, 0, 0)';
-        overlayCtx.fillRect(0, 0, width * tileSize, height * tileSize);
-        overlayCtx.fillStyle = 'white';
-        overlayCtx.font = '30px Arial';
-        overlayCtx.fillText('Game Over', 100, 100);
+
+
+const newGame = () => {
+  playingMusic.currentTime = 0;
+  playingMusic.play();
+  const countDown = setInterval(() => {
+    remainingTime -= 1;
+    drawUI();
+
+    if (remainingTime === 0) {
+        clearInterval(countDown);
+        gameOver();
     }
-}, 1000);
+  }, 1000);
+}
 
+overlayCtx.fillStyle = 'white'
+overlayCtx.font = ' 24px arial'
+overlayCtx.fillText('Jubert\'s Tower', 320, 120);
+overlayCtx.font = '16px arial'
+overlayCtx.fillText('By: Jose Carrillo, Rafael Mata, Tomas Santana y Marlon Urdaneta.', 0, 470);
+overlayCtx.fillText('Click to start', 355, 160);
 
-
-
-
+overlay.onclick = () => {
+  playingMusic.play();
+  playing = true;
+  overlay.onclick = null;
+  drawLevel();
+  newGame();
+}
