@@ -9,3 +9,4 @@ export default class Tile {
         this.blockSight = blockSight || blocked;
     }
 }
+
