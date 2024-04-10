@@ -3,7 +3,7 @@ export default {
         path: 'TileSet/frames/floor_1.png'
     },
     'c': {
-        path: 'TileSet/frames/chest_full_open_anim_f0.png'
+        path: 'TileSet/frames/ui_heart_full.png'
     },
     '#': {
         path: 'TileSet/frames/wall_mid.png'
@@ -33,7 +33,7 @@ export default {
         path: 'TileSet/frames/wall_edge_bottom_right.png'
     },
     '@': {
-        path: 'TileSet/frames/skelet_idle_anim_f0.png'
+        path: 'anim/skeleton_full.png'
     },
     'e': {
         path: 'TileSet/frames/goblin_idle_anim_f0.png'

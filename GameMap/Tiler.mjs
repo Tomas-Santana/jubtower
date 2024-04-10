@@ -3,8 +3,9 @@ import MapTiles from "./MapTiles.mjs";
 import TextTiles from "./TextTiles.mjs";
 
 export default class Tiler {
-    constructor(ctx, map, tileset, tileWidth, tileHeight) {
+    constructor(ctx, foreGroundCtx, map, tileset, tileWidth, tileHeight) {
         this.ctx = ctx;
+        this.foregroundCtx = foreGroundCtx;
         this.map = map;
         this.tileset = tileset;
         this.tileWidth = tileWidth;
