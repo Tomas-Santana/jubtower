@@ -135,6 +135,7 @@ const drawLevel = async () => {
 async function gameOver() {
   playingMusic.pause();
   deadMusic.play();
+  player.hp = 2
   uiCtx.clearRect(0, 0, width * tileSize, height * tileSize);
   overlayCtx.fillStyle = 'rgba(0, 0, 0)';
   overlayCtx.fillRect(0, 0, width * tileSize, height * tileSize);
